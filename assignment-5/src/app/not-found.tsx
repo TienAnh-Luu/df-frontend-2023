@@ -3,17 +3,22 @@
 import Link from 'next/link'
 import { Typography, Space } from 'antd'
 import { AiOutlineArrowLeft } from 'react-icons/ai'
+import { useTheme } from './_context/ThemeContext'
 
 const { Title, Text } = Typography
 
 export default function ErrorPage() {
+  const { isDarkMode } = useTheme()
+
   return (
     <Space
       direction="vertical"
       align="center"
       style={{
         width: '100%',
-        marginTop: '6rem',
+        minHeight: 'calc(100vh - 45.09px)',
+        paddingTop: '6rem',
+        backgroundColor: isDarkMode ? 'rgb(36,37,38)' : 'white',
       }}
     >
       <Title level={1} style={{ marginBottom: '10px' }}>
