@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import useSWR from 'swr'
 import { Button, Space, Input, message } from 'antd'
 import { BiSearchAlt2 } from 'react-icons/bi'
 import BookModal from '../_components/BookModal'
 import MyTable from '../_components/Table'
-import { defaultBooks, emptyBook } from '../_utils/constants'
-import { getData } from '../_utils/data'
-import { Book } from '../_types/Homepage.types'
+import { emptyBookRequest } from '../_utils/constants'
+import { client } from '../../lib/api'
+import { Book, BookRequest } from '../_types/schema.types'
 import { useTheme } from '../_context/ThemeContext'
 
 const Homepage = () => {
@@ -22,21 +23,64 @@ const Homepage = () => {
 
   const [openAddBookModal, setOpenAddBookModal] = useState(false)
   const [openEditBookModal, setOpenEditBookModal] = useState(false)
+  const [shouldFetchAddBook, setShouldFetchAddBook] = useState(false)
+  const [shouldFetchUpdateBook, setShouldFetchUpdateBook] = useState(false)
   const [books, setBooks] = useState<Book[]>([])
-  const [bookEdit, setBookEdit] = useState<Book>(emptyBook)
+  const [bookToFetch, setBookToFetch] = useState<BookRequest>(emptyBookRequest)
+  const [bookIdToFetch, setBookIdToFetch] = useState(-1)
+
+  const {
+    data: bookData,
+    error,
+    isLoading,
+  } = useSWR('fetch-book', () => client.getBooks())
+
+  const { data: topics, error: getTopicsError } = useSWR('fetch-topics', () =>
+    client.getTopics(),
+  )
+
+  const {
+    data: newBookAddedData,
+    error: addBookError,
+    isLoading: isAddingBook,
+  } = useSWR(shouldFetchAddBook ? 'fetch-add-book' : null, () =>
+    client.addBook(bookToFetch),
+  )
+
+  const {
+    data: newBookUpdatedData,
+    error: updateBookError,
+    isLoading: isUpdatingBook,
+  } = useSWR(shouldFetchUpdateBook ? 'fetch-update-book' : null, () =>
+    client.updateBook(bookIdToFetch, bookToFetch),
+  )
 
   useEffect(() => {
-    const dat = getData()
+    const dat = bookData?.data || []
+    setBooks(dat)
+    setBooksFiltered(dat)
+  }, [bookData])
 
-    if (dat.length === 0) {
-      setBooks(defaultBooks)
-      setBooksFiltered(defaultBooks)
-      localStorage.setItem('books', JSON.stringify(defaultBooks))
-    } else {
-      setBooks(dat)
-      setBooksFiltered(dat)
+  useEffect(() => {
+    if (
+      error?.message ||
+      getTopicsError?.message ||
+      addBookError?.message ||
+      updateBookError?.message
+    ) {
+      const content =
+        error?.message ||
+        getTopicsError?.message ||
+        addBookError?.message ||
+        updateBookError?.message ||
+        'Unknown error'
+
+      messageApi.open({
+        type: 'error',
+        content,
+      })
     }
-  }, [])
+  }, [error, getTopicsError, addBookError, updateBookError, messageApi])
 
   const handleCloseAddBookModal = (): void => {
     setOpenAddBookModal(false)
@@ -46,36 +90,62 @@ const Homepage = () => {
     setOpenEditBookModal(false)
   }
 
-  const handleAddBook = (newBook: Book): void => {
-    if (newBook.name && newBook.author && newBook.topic) {
-      const newBooks = [...books, newBook]
-      setSearchValue('')
-      setBooks(newBooks)
-      localStorage.setItem('books', JSON.stringify(newBooks))
-      setBooksFiltered(newBooks)
-      handleSuccessMessage('Create')
-      handleCloseAddBookModal()
+  const handleAddBook = (newBook: BookRequest & { id: number }): void => {
+    const { name, author, topicId } = newBook
+    if (name && author && !shouldFetchAddBook) {
+      setBookToFetch({
+        name,
+        author,
+        topicId,
+      })
+      setShouldFetchAddBook(true)
+      // if fetching is done
+      if (
+        newBookAddedData &&
+        newBookAddedData?.data.name === name &&
+        newBookAddedData?.data.author === author
+      ) {
+        const newBooks = [...books, newBookAddedData.data]
+        setShouldFetchAddBook(false)
+        setSearchValue('')
+        setBooks(newBooks)
+        setBooksFiltered(newBooks)
+        setBookToFetch(emptyBookRequest)
+        handleSuccessMessage('Create')
+        handleCloseAddBookModal()
+      }
     }
   }
 
-  const handleEditBook = (newBook: Book): void => {
-    const { id, name, author, topic } = newBook
-    if (id !== -1 && name && author && topic) {
-      const newBooks = books.map((book) => {
-        if (id === book.id) {
-          return newBook
-        }
-        return book
-      })
-
-      setBooks(newBooks)
-      localStorage.setItem('books', JSON.stringify(newBooks))
-      setBooksFiltered(newBooks)
-      handleSuccessMessage('Edit')
-      handleCloseEditBookModal()
+  const handleEditBook = (newBook: BookRequest & { id: number }): void => {
+    const { id, name, author, topicId } = newBook
+    if (
+      id !== -1 &&
+      name &&
+      author &&
+      topicId !== -1 &&
+      !shouldFetchUpdateBook
+    ) {
+      setBookToFetch({ name, author, topicId })
+      setBookIdToFetch(id)
+      setShouldFetchUpdateBook(true)
+      // if fetching is done
+      if (newBookUpdatedData && newBookUpdatedData?.data.id === id) {
+        const newBooks = books.map((book) => {
+          if (book.id === id) {
+            return newBookUpdatedData?.data
+          }
+          return book
+        })
+        setShouldFetchUpdateBook(false)
+        setBooks(newBooks)
+        setBooksFiltered(newBooks)
+        setBookIdToFetch(-1)
+        setBookToFetch(emptyBookRequest)
+        handleSuccessMessage('Edit')
+        handleCloseEditBookModal()
+      }
     }
-
-    setBookEdit(emptyBook)
   }
 
   const handleDeleteBook = (id: number): void => {
@@ -149,19 +219,27 @@ const Homepage = () => {
           books={books}
           booksFiltered={booksFiltered}
           handleDeleteBook={handleDeleteBook}
-          setBookEdit={setBookEdit}
+          setBookToFetch={setBookToFetch}
+          setBookIdToFetch={setBookIdToFetch}
           setOpenEditBookModal={setOpenEditBookModal}
+          isLoading={isLoading}
         />
       </Space.Compact>
       <BookModal
-        defaultValues={emptyBook}
+        topics={topics?.data || []}
+        defaultValues={emptyBookRequest}
+        idToFetch={bookIdToFetch}
         handleOK={handleAddBook}
+        isLoading={isAddingBook}
         handleCloseModal={handleCloseAddBookModal}
         openModal={openAddBookModal}
       />
       <BookModal
-        defaultValues={bookEdit}
+        topics={topics?.data || []}
+        defaultValues={bookToFetch}
+        idToFetch={bookIdToFetch}
         handleOK={handleEditBook}
+        isLoading={isUpdatingBook}
         handleCloseModal={handleCloseEditBookModal}
         openModal={openEditBookModal}
       />

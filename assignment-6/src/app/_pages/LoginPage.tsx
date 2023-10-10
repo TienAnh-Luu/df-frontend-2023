@@ -1,16 +1,45 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Space, Card, Form, Input, Button, Typography } from 'antd'
+import { useState } from 'react'
+import {
+  Space,
+  Card,
+  Form,
+  Input,
+  Button,
+  Typography,
+  message,
+  Spin,
+} from 'antd'
 import { LoginFieldType } from '../_types/LoginPage.types'
 import { useTheme } from '../_context/ThemeContext'
+import { useAuthContext } from '../_context/AuthContext'
 
 const { Title } = Typography
 
 const LoginPage = () => {
   const [form] = Form.useForm()
+  const [messageApi, contextHolder] = message.useMessage()
   const { isDarkMode } = useTheme()
   const router = useRouter()
+  const { login } = useAuthContext()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      setIsLoading(true)
+      await login(email, password)
+      setIsLoading(false)
+      messageApi.open({
+        type: 'success',
+        content: 'Login success',
+      })
+      router.replace('/')
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   return (
     <Space
@@ -23,6 +52,7 @@ const LoginPage = () => {
         backgroundColor: isDarkMode ? 'rgb(36,37,38)' : 'white',
       }}
     >
+      {contextHolder}
       <Card
         bordered
         title={
@@ -36,10 +66,13 @@ const LoginPage = () => {
           name="login-form"
           layout="vertical"
           labelCol={{ span: 8 }}
-          onFinish={() => {
-            alert('Login success')
-            router.replace('/')
-          }}
+          onFinish={({
+            email,
+            password,
+          }: {
+            email: string
+            password: string
+          }) => handleLogin(email, password)}
           onFinishFailed={() => {
             console.log('Failed')
           }}
@@ -79,9 +112,16 @@ const LoginPage = () => {
             <Input type="text" placeholder="Password" />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
-              Login
-            </Button>
+            <Spin spinning={isLoading}>
+              <Button
+                disabled={isLoading}
+                type="primary"
+                htmlType="submit"
+                style={{ width: '100%' }}
+              >
+                Login
+              </Button>
+            </Spin>
           </Form.Item>
         </Form>
       </Card>

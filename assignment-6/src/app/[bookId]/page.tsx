@@ -5,7 +5,7 @@ import { Typography, Space, Button, Popconfirm, message } from 'antd'
 import { AiOutlineArrowLeft } from 'react-icons/ai'
 import { BsFillTrashFill } from 'react-icons/bs'
 import { getData } from '../_utils/data'
-import { Book } from '../_types/Homepage.types'
+import { Book } from '../_types/schema.types'
 import { emptyBook } from '../_utils/constants'
 import { useTheme } from '../_context/ThemeContext'
 
@@ -62,7 +62,7 @@ const BookDetail = ({ params: { bookId } }: { params: { bookId: string } }) => {
         <b>Author</b>: {book.author}
       </Text>
       <Text style={{ fontSize: '18px', marginBottom: '15px' }}>
-        <b>Topic</b>: {book.topic}
+        <b>Topic</b>: {book.topic.name}
       </Text>
       <Popconfirm
         title="Delete book"

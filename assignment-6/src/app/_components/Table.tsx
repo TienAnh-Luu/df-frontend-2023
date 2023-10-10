@@ -1,14 +1,17 @@
 import { Table, Space, Popconfirm, Button } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import { TableDataType, MyTableProps } from '../_types/Table.types'
-import { emptyBook } from '../_utils/constants'
+import { emptyBookRequest } from '../_utils/constants'
+import { BookRequest } from '../_types/schema.types'
 
 const MyTable = ({
   handleDeleteBook,
   books,
-  setBookEdit,
+  setBookToFetch,
+  setBookIdToFetch,
   setOpenEditBookModal,
   booksFiltered,
+  isLoading,
 }: MyTableProps) => {
   const tableColumns: ColumnsType<TableDataType> = [
     {
@@ -56,10 +59,20 @@ const MyTable = ({
           <Button
             type="text"
             onClick={() => {
-              const bookToEdit =
-                books.find((book) => book.id === Number(record['#'])) ||
-                emptyBook
-              setBookEdit(bookToEdit)
+              const findBook = books.find(
+                (book) => book.id === Number(record['#']),
+              )
+
+              const bookToEdit: BookRequest = findBook
+                ? {
+                    name: findBook.name,
+                    author: findBook.author,
+                    topicId: findBook.topic.id,
+                  }
+                : emptyBookRequest
+
+              setBookToFetch(bookToEdit)
+              setBookIdToFetch(Number(record['#']))
               setOpenEditBookModal(true)
             }}
           >
@@ -77,7 +90,7 @@ const MyTable = ({
         '#': id,
         name,
         author,
-        topic,
+        topic: topic.name,
         action: '',
       }
     },
@@ -89,6 +102,7 @@ const MyTable = ({
       columns={tableColumns}
       bordered
       pagination={{ defaultPageSize: 4 }}
+      loading={isLoading}
     />
   )
 }

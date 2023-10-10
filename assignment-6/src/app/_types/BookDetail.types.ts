@@ -1,4 +1,4 @@
-import { Book } from './Homepage.types'
+import { Book } from './schema.types'
 
 export interface BookDetailProps {
   book: Book

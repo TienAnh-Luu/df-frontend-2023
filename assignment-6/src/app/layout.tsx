@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import MyLayout from './_components/Layout'
 import StyledComponentsRegistry from '../lib/AntdRegistry'
 import { ThemeProvider } from './_context/ThemeContext'
+import { AuthContextProvider } from './_context/AuthContext'
 
 export const metadata: Metadata = {
   title: 'Bookstore',
@@ -19,17 +20,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      {/* <head>
-      <Script
-        src="https://kit.fontawesome.com/372c90f6b7.js"
-        crossOrigin="anonymous"
-      />
-    </head> */}
       <body className={inter.className} style={{ minHeight: '100vh' }}>
         <StyledComponentsRegistry>
-          <ThemeProvider>
-            <MyLayout>{children}</MyLayout>
-          </ThemeProvider>
+          <AuthContextProvider>
+            <ThemeProvider>
+              <MyLayout>{children}</MyLayout>
+            </ThemeProvider>
+          </AuthContextProvider>
         </StyledComponentsRegistry>
       </body>
     </html>

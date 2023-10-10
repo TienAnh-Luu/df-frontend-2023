@@ -1,8 +1,11 @@
-import { Book } from './Homepage.types'
+import { BookRequest, Topic } from './schema.types'
 
 export interface BookModalProps {
+  topics: Topic[]
   openModal: boolean
-  defaultValues: Book
-  handleOK: (value: Book) => void
+  defaultValues: BookRequest
+  idToFetch: number
+  handleOK: (value: BookRequest & { id: number }) => void
+  isLoading: boolean
   handleCloseModal: () => void
 }

@@ -1,4 +1,4 @@
-import { Book } from './Homepage.types'
+import { Book, BookRequest } from './schema.types'
 
 export interface TableDataType {
   key: React.Key
@@ -12,7 +12,9 @@ export interface TableDataType {
 export interface MyTableProps {
   handleDeleteBook: (id: number) => void
   books: Book[]
-  setBookEdit: (book: Book) => void
+  setBookToFetch: (book: BookRequest) => void
+  setBookIdToFetch: (id: number) => void
   setOpenEditBookModal: (value: boolean) => void
   booksFiltered: Book[]
+  isLoading: boolean
 }

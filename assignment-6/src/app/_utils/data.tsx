@@ -1,4 +1,4 @@
-import { Book } from '../_types/Homepage.types'
+import { Book } from '../_types/schema.types'
 
 export const getData = () => {
   let dat: Book[] = []
